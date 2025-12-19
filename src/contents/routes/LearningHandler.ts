@@ -11,7 +11,7 @@ export class LearningHandler implements RouteHandlerInterface {
     }
 
     async handler() {
-
+        await storageService.set(StorageKeys.LAST_LESSON_WAITED,document.location.href)
         const PopupDialog = document.querySelector(Constants.PopUpDialogSelector)
         if (PopupDialog != null) {
             logMessage("🛑 Pop up found,closing...")
@@ -20,9 +20,8 @@ export class LearningHandler implements RouteHandlerInterface {
 
         if(await storageService.get<string>(StorageKeys.LAST_QUIZ_COMPLETED) == document.location.href){
             logMessage("⁉️ lesson already done going back")
-            await storageService.set(StorageKeys.LAST_QUIZ_COMPLETED,"")
             globalThis.location.replace("https://user.7speaking.com/home");
-
+            return
         }
 
         if(!await timeService.isWaitingEnded(TimerType.QUIZ)){

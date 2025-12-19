@@ -75,6 +75,7 @@ export class StorageKeys {
     }
     );
     public static readonly LAST_QUIZ_COMPLETED = new StorageKeys("lastQuizCompleted", "");
+    public static readonly LAST_LESSON_WAITED = new StorageKeys("lastLessonWaited", "");
 
 
     private constructor(public readonly key: string, public readonly defaultValue: any,public readonly customSetter : ()=>any = null) {

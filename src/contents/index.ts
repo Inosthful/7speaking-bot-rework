@@ -6,6 +6,7 @@ import type { PlasmoCSConfig } from "plasmo"
 import {logMessage} from "~contents/utils/Logging";
 import {StorageKeys, storageService} from "~contents/services/StorageService";
 import {updateService} from "~contents/services/UpdateService";
+import {Constants} from "~contents/utils/Constants";
 
 export const config: PlasmoCSConfig = {
     matches: ["https://user.7speaking.com/*"],
@@ -18,10 +19,13 @@ class Bot {
 
     uniqueContentScriptId : string = null
 
-    setup() {
+    async setup() {
         this.uniqueContentScriptId = crypto.randomUUID()
-        storageService.set(StorageKeys.LAST_CONTENT_SCRIPT_ID, this.uniqueContentScriptId)
-        storageService.set(StorageKeys.ACTIVE, false)
+        const diff = Date.now() - await storageService.get<number>(StorageKeys.LAST_TIME_RUN)
+        if(diff >= Constants.maxTimeUseDiffTooLong){
+            await storageService.set(StorageKeys.ACTIVE, false)
+        }
+        await storageService.set(StorageKeys.LAST_CONTENT_SCRIPT_ID, this.uniqueContentScriptId)
     }
 
     async loop() {
@@ -67,5 +71,6 @@ class Bot {
 console.log("Bot started")
 const bot = new Bot()
 
-bot.setup()
-bot.loop()
+bot.setup().then(
+    ()=> bot.loop()
+)

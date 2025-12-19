@@ -27,7 +27,7 @@ export class EndScreen extends QuestionInterface<void> {
     async executeSubmit(): Promise<void> {
         document.querySelector<HTMLButtonElement>(".result-container button.back")?.click()
         await storageService.update(StorageKeys.STAT_QUIZ_DONE)
-        await storageService.set(StorageKeys.LAST_QUIZ_COMPLETED,await storageService.get(StorageKeys.TIMER_URL))
+        await storageService.set(StorageKeys.LAST_QUIZ_COMPLETED,await storageService.get(StorageKeys.LAST_LESSON_WAITED))
     }
 
 }
