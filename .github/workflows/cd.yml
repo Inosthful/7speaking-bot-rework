@@ -1,64 +1,82 @@
-name: cd
+name: Publish new release
 on:
-  create:
-    tags:
-      - '*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release"
+        required: true
 
 jobs:
+
   build_chrome:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+
+      - name: Bump package version to ${{ inputs.version }}
+        run: |
+          VERSION="${{ inputs.version }}"
+          jq --arg version "$VERSION" '.version = $version' package.json > package.json.tmp
+          mv package.json.tmp package.json
+
       - name: Install dependencies
         run: npm install -g yarn && yarn
 
-      - name: Build Chrome Extension ${{ github.ref_name }}
+      - name: Build Chrome Extension ${{ inputs.version }}
         run: yarn plasmo build --target=chrome-mv3 --zip
 
-      - name: Create key.pem ${{ github.ref_name }}
+      - name: Create key.pem ${{ inputs.version }}
         env:
           CRX_KEY: ${{ secrets.CRX_KEY }}
         run: echo "$CRX_KEY" > key.pem
 
-      - name: Package Chrome Extension ${{ github.ref_name }}
+      - name: Package Chrome Extension ${{ inputs.version }}
         run: >
           yarn crx3
           --keyPath key.pem
-          --zipPath "./release/7speaking-bot-rework_chrome-${{ github.ref_name }}.zip"
-          --crxPath "./release/7speaking-bot-rework_chrome-${{ github.ref_name }}.crx"
+          --zipPath "./release/7speaking-bot-rework_chrome-${{ inputs.version }}.zip"
+          --crxPath "./release/7speaking-bot-rework_chrome-${{ inputs.version }}.crx"
           --xmlPath "./release/chrome_update.xml"
-          --crxUrl "https://github.com/orkeilius/7speaking-bot-rework/releases/download/${{ github.ref_name }}/7speaking-bot-rework_chromium-${{ github.ref_name }}.crx"
+          --crxUrl "https://github.com/orkeilius/7speaking-bot-rework/releases/download/${{ inputs.version }}/7speaking-bot-rework_chromium-${{ inputs.version }}.crx"
           "./build/chrome-mv3-prod/manifest.json"
 
-      - name: Upload Chrome Extension ${{ github.ref_name }} zip
+      - name: Upload Chrome Extension ${{ inputs.version }} zip
         uses: actions/upload-artifact@v4
         with:
-          path: "./release/7speaking-bot-rework_chrome-${{ github.ref_name }}.zip"
-          name: 7speaking-bot-rework_chrome-${{ github.ref_name }}.zip
-      - name: Upload Chrome Extension ${{ github.ref_name }} crx
+          path: "./release/7speaking-bot-rework_chrome-${{ inputs.version }}.zip"
+          name: 7speaking-bot-rework_chrome-${{ inputs.version }}.zip
+      - name: Upload Chrome Extension ${{ inputs.version }} crx
         uses: actions/upload-artifact@v4
         with:
-          path: "./release/7speaking-bot-rework_chrome-${{ github.ref_name }}.crx"
-          name: 7speaking-bot-rework_chrome-${{ github.ref_name }}.crx
+          path: "./release/7speaking-bot-rework_chrome-${{ inputs.version }}.crx"
+          name: 7speaking-bot-rework_chrome-${{ inputs.version }}.crx
 
   build_firefox:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+
+      - name: Bump package version to ${{ inputs.version }}
+        run: |
+          VERSION="${{ inputs.version }}"
+          jq --arg version "$VERSION" '.version = $version' package.json > package.json.tmp
+          mv package.json.tmp package.json
+
       - name: Install dependencies
         run: npm install -g yarn && yarn
 
-      - name: Build Firefox Extension ${{ github.ref_name }}
+
+      - name: Build Firefox Extension ${{ inputs.version }}
         run: yarn plasmo build --target=firefox-mv3
 
 
-      - name: Upload Firefox unsigned Extension ${{ github.ref_name }}
+      - name: Upload Firefox unsigned Extension ${{ inputs.version }}
         uses: actions/upload-artifact@v4
         with:
           path: "./build/firefox-mv3-prod"
-          name: 7speaking-bot-rework_firefox-${{ github.ref_name }}-unsigned
+          name: 7speaking-bot-rework_firefox-${{ inputs.version }}-unsigned
 
   sign_firefox:
     runs-on: ubuntu-latest
@@ -69,13 +87,13 @@ jobs:
       - name: Install dependencies
         run: npm install -g yarn && yarn
 
-      - name: Download Firefox unsigned Extension ${{ github.ref_name }}
+      - name: Download Firefox unsigned Extension ${{ inputs.version }}
         uses: actions/download-artifact@v4
         with:
-          name: 7speaking-bot-rework_firefox-${{ github.ref_name }}-unsigned
+          name: 7speaking-bot-rework_firefox-${{ inputs.version }}-unsigned
           path: ./build/firefox-mv3-prod
 
-      - name: Sign Firefox Extension ${{ github.ref_name }} xpi
+      - name: Sign Firefox Extension ${{ inputs.version }} xpi
         env:
           FIREFOX_API_KEY: ${{ secrets.FIREFOX_API_KEY }}
           FIREFOX_API_SECRET: ${{ secrets.FIREFOX_API_SECRET }}
