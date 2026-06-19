@@ -1,0 +1,72 @@
+name: ci
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+    - name: Install dependencies
+      run: npm install -g yarn && yarn
+    - name: Run lint
+      run: npm run lint
+
+
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    env:
+      website_test_username: ${{ secrets.WEBSITE_TEST_USERNAME }}
+      website_test_password: ${{ secrets.WEBSITE_TEST_PASSWORD }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+    - name: Install dependencies
+      run: npm install -g yarn && yarn
+    - name: Install Playwright Browser
+      run: yarn playwright install chromium
+    - name: Run tests
+      run: npm run test
+
+  sonarqube:
+    name: SonarQube
+    runs-on: ubuntu-latest
+    needs:
+      - lint
+      - test
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  trivy:
+    name: Trivy Scan
+    runs-on: ubuntu-latest
+    needs:
+      - lint
+      - test
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - name: Install dependencies
+        run: npm install -g yarn && yarn
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: 'repository'
+          scanners: 'vuln,secret,misconfig'
+          scan-ref: '.'
+          format: 'table'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
