@@ -12,24 +12,22 @@ const mozilla = new MozillaAddonsAPI({
 })
 
 const jwt = await mozilla.getAccessToken()
-try {
-  while (true) {
-    let upload_info = await fetch(
-      `https://addons.mozilla.org/api/v4/addons/${process.env.FIREFOX_ID}/versions/${process.env.FIREFOX_TAG}/`,
-      {
-        headers: {
-          Authorization: `JWT ${jwt}`
-        }
+
+while (true) {
+  let upload_info = await fetch(
+    `https://addons.mozilla.org/api/v4/addons/${process.env.FIREFOX_ID}/versions/${process.env.FIREFOX_TAG}/`,
+    {
+      headers: {
+        Authorization: `JWT ${jwt}`
       }
-    ).then((res) => res.json())
-    if (upload_info?.files?.[0]?.signed) {
-      console.log("Signed upload success")
-      break
-    } else {
-      console.log("Waiting for signing up")
-      await new Promise((resolve) => setTimeout(resolve, 20000))
     }
+  ).then((res) => res.json())
+  console.log(upload_info)
+  if (upload_info?.files[0].signed) {
+    console.log("Signed upload success")
+    break
+  } else {
+    console.log("Waiting for signing up")
+    await new Promise((resolve) => setTimeout(resolve, 20000))
   }
-} catch (error) {
-  console.error(error)
 }

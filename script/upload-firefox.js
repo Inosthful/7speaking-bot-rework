@@ -7,9 +7,7 @@ const mozilla = new MozillaAddonsAPI({
   channel: "unlisted"
 })
 
-await mozilla
-  .submit({
-    filePath: process.env.INPUT_PATH,
-    version: process.env.FIREFOX_TAG
-  })
-  .catch(console.error)
+await mozilla.submit({
+  filePath: process.env.INPUT_PATH,
+  version: process.env.FIREFOX_TAG
+})

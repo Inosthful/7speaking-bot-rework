@@ -24,11 +24,15 @@ let upload_info = await fetch(
 console.log(upload_info);
 const download_url = upload_info.files[0].download_url;
 
-await https.get(
-  download_url,
-  { headers: { Authorization: `JWT ${jwt}` } },
-  (res) => {
-    const writeStream = fs.createWriteStream(process.env.OUTPUT_PATH)
-    res.pipe(writeStream)
-  }
-)
+await new Promise((resolve, reject) => {
+  https.get(
+    download_url,
+    { headers: { Authorization: `JWT ${jwt}` } },
+    (res) => {
+      const writeStream = fs.createWriteStream(process.env.OUTPUT_PATH)
+      res.pipe(writeStream)
+      res.on("end", resolve)
+      res.on("error", reject)
+    }
+  ).on("error", reject)
+})
