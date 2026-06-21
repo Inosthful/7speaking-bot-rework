@@ -5,83 +5,80 @@ on:
       version:
         description: "Version to release"
         required: true
-
+env:
+  version: ${{ inputs.version }}
 jobs:
-
   build_chrome:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7.0.0
+      - uses: actions/setup-node@v6.4.0
+      - uses: borales/actions-yarn@3766bb1335b98fb13c60eaf358fe20811b730a88 #v5
+        with:
+          cmd: install
 
-      - name: Bump package version to ${{ inputs.version }}
+      - name: Bump package version to ${{ env.version }}
         run: |
-          VERSION="${{ inputs.version }}"
-          jq --arg version "$VERSION" '.version = $version' package.json > package.json.tmp
+          jq --arg version "$version" '.version = $version' package.json > package.json.tmp
           mv package.json.tmp package.json
 
-      - name: Install dependencies
-        run: npm install -g yarn && yarn
 
-      - name: Build Chrome Extension ${{ inputs.version }}
+      - name: Build Chrome Extension ${{ env.version }}
         run: yarn plasmo build --target=chrome-mv3 --zip
 
-      - name: Create key.pem ${{ inputs.version }}
+      - name: Create key.pem ${{ env.version }}
         env:
           CRX_KEY: ${{ secrets.CRX_KEY }}
         run: echo "$CRX_KEY" > key.pem
 
-      - name: Package Chrome Extension ${{ inputs.version }}
+      - name: Package Chrome Extension ${{ env.version }}
         run: >
           yarn crx3
           --keyPath key.pem
-          --zipPath "./release/7speaking-bot-rework_chrome-${{ inputs.version }}.zip"
-          --crxPath "./release/7speaking-bot-rework_chrome-${{ inputs.version }}.crx"
+          --zipPath "./release/7speaking-bot-rework_chrome-$version.zip"
+          --crxPath "./release/7speaking-bot-rework_chrome-$version.crx"
           --xmlPath "./release/chrome_update.xml"
-          --crxURL "https://github.com/orkeilius/7speaking-bot-rework/releases/download/${{ inputs.version }}/7speaking-bot-rework_chromium-${{ inputs.version }}.crx"
+          --crxURL "https://github.com/orkeilius/7speaking-bot-rework/releases/download/$version/7speaking-bot-rework_chromium-$version.crx"
           "./build/chrome-mv3-prod/manifest.json"
 
-      - name: Upload Chrome Extension ${{ inputs.version }} zip
-        uses: actions/upload-artifact@v4
+      - name: Upload Chrome Extension ${{ env.version }} zip
+        uses: actions/upload-artifact@v7.0.1
         with:
-          path: "./release/7speaking-bot-rework_chrome-${{ inputs.version }}.zip"
-          name: 7speaking-bot-rework_chrome-${{ inputs.version }}.zip
-      - name: Upload Chrome Extension ${{ inputs.version }} crx
-        uses: actions/upload-artifact@v4
+          path: "./release/7speaking-bot-rework_chrome-${{ env.version }}.zip"
+          name: 7speaking-bot-rework_chrome-${{ env.version }}.zip
+      - name: Upload Chrome Extension crx
+        uses: actions/upload-artifact@v7.0.1
         with:
-          path: "./release/7speaking-bot-rework_chrome-${{ inputs.version }}.crx"
-          name: 7speaking-bot-rework_chrome-${{ inputs.version }}.crx
-      - name: Upload Chrome metadata ${{ inputs.version }}
-        uses: actions/upload-artifact@v4
+          path: "./release/7speaking-bot-rework_chrome-${{ env.version }}.crx"
+          name: 7speaking-bot-rework_chrome-${{ env.version }}.crx
+      - name: Upload Chrome metadata
+        uses: actions/upload-artifact@v7.0.1
         with:
           path: "./release/chrome_update.xml"
-          name: chrome_update_${{ inputs.version }}
+          name: chrome_update_${{ env.version }}
 
   build_firefox:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
       - uses: actions/setup-node@v4
+      - uses: borales/actions-yarn@3766bb1335b98fb13c60eaf358fe20811b730a88 #v5
+        with:
+          cmd: install
 
-      - name: Bump package version to ${{ inputs.version }}
+      - name: Bump package version to ${{ env.version }}
         run: |
-          VERSION="${{ inputs.version }}"
-          jq --arg version "$VERSION" '.version = $version' package.json > package.json.tmp
+          jq --arg version "$version" '.version = $version' package.json > package.json.tmp
           mv package.json.tmp package.json
 
-      - name: Install dependencies
-        run: npm install -g yarn && yarn
-
-
-      - name: Build Firefox Extension ${{ inputs.version }}
+      - name: Build Firefox Extension
         run: yarn plasmo build --target=firefox-mv3 --zip
 
-
-      - name: Upload Firefox unsigned Extension ${{ inputs.version }} zip
-        uses: actions/upload-artifact@v4
+      - name: Upload Firefox unsigned Extension zip
+        uses: actions/upload-artifact@v7.0.1
         with:
           path: "./build/firefox-mv3-prod.zip"
-          name: 7speaking-bot-rework_firefox-${{ inputs.version }}-unsigned
+          name: 7speaking-bot-rework_firefox-${{ env.version }}-unsigned
 
   sign_firefox:
     runs-on: ubuntu-latest
@@ -94,33 +91,33 @@ jobs:
       INPUT_PATH: ./build/firefox-mv3-prod.zip
       OUTPUT_PATH: ./7speaking-bot-rework_firefox-${{ inputs.version }}.xpi
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
       - uses: actions/setup-node@v4
-
-      - name: Install dependencies
-        run: npm install -g yarn && yarn
-
-      - name: Download Firefox unsigned Extension ${{ inputs.version }}
-        uses: actions/download-artifact@v4
+      - uses: borales/actions-yarn@3766bb1335b98fb13c60eaf358fe20811b730a88 #v5
         with:
-          name: 7speaking-bot-rework_firefox-${{ inputs.version }}-unsigned
+          cmd: install
+
+      - name: Download Firefox unsigned Extension
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: 7speaking-bot-rework_firefox-${{ env.version }}-unsigned
           path: "./build/"
 
-      - name: Upload signed firefox extension ${{ inputs.version }}
+      - name: Upload signed firefox extension
         continue-on-error: true
         run: node ./script/upload-firefox.js
 
       - name: Wait for signing
         run: node ./script/wait-for-signing.js
 
-      - name: Download signed Firefox Extension ${{ inputs.version }}
+      - name: Download signed Firefox Extension
         run: node ./script/download-signed-firefox.js
 
-      - name: Upload signed Firefox Extension ${{ inputs.version }}
-        uses: actions/upload-artifact@v4
+      - name: Upload signed Firefox Extension
+        uses: actions/upload-artifact@v7.0.1
         with:
-          path: ./7speaking-bot-rework_firefox-${{ inputs.version }}.xpi
-          name: 7speaking-bot-rework_firefox-${{ inputs.version }}.xpi
+          path: ./7speaking-bot-rework_firefox-${{ env.version }}.xpi
+          name: 7speaking-bot-rework_firefox-${{ env.version }}.xpi
 
   update-repo:
     runs-on: ubuntu-latest
@@ -130,30 +127,28 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
       - uses: actions/setup-node@v4
-
-      - name: Install dependencies
-        run: npm install -g yarn && yarn
+      - uses: borales/actions-yarn@3766bb1335b98fb13c60eaf358fe20811b730a88 #v5
+        with:
+          cmd: install
 
       - name: Download chrome metadata
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.1
         with:
-          name: chrome_update_${{ inputs.version }}
+          name: chrome_update_${{ env.version }}
           path: "./release/"
 
       - name: update package to version ${{ inputs.version }}
         run: |
-          VERSION="${{ inputs.version }}"
-          jq --arg version "$VERSION" '.version = $version' package.json > package.json.tmp
+          jq --arg version "$version" '.version = $version' package.json > package.json.tmp
           mv package.json.tmp package.json
 
       - name: Update firefox_update.json ${{ inputs.version }}
         run: |
-          VERSION="${{ inputs.version }}"
           FIREFOX_ID="7speaking-bot-rework@github.com"
-          UPDATE_LINK="https://github.com/orkeilius/7speaking-bot-rework/releases/download/${{ inputs.version }}/7speaking-bot-rework_firefox-${{ inputs.version }}.xpi"
-          jq --arg version "$VERSION" \
+          UPDATE_LINK="https://github.com/orkeilius/7speaking-bot-rework/releases/download/$version/7speaking-bot-rework_firefox-$version.xpi"
+          jq --arg version "$version" \
              --arg firefox_id "$FIREFOX_ID" \
              --arg update_link "$UPDATE_LINK" \
              '.addons[$firefox_id].updates += [{"version": $version, "update_link": $update_link}]' \
@@ -161,10 +156,10 @@ jobs:
           mv release/firefox_update.json.tmp release/firefox_update.json
 
       - name: Commit update
-        uses: EndBug/add-and-commit@v10
+        uses: EndBug/add-and-commit@290ea2c423ad77ca9c62ae0f5b224379612c0321 #v10
         with:
-          message: "chore: release version ${{ inputs.version }} "
-          tag: ${{ inputs.version }}
+          message: "chore: release version ${{ env.version }} "
+          tag: ${{ env.version }}
 
   release:
     runs-on: ubuntu-latest
@@ -172,34 +167,34 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
 
       - name: Download Chrome zip
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.1
         with:
-          name: 7speaking-bot-rework_chrome-${{ inputs.version }}.zip
+          name: 7speaking-bot-rework_chrome-${{ env.version }}.zip
           path: "./release/"
 
       - name: Download Chrome crx
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.1
         with:
-          name: 7speaking-bot-rework_chrome-${{ inputs.version }}.crx
+          name: 7speaking-bot-rework_chrome-${{ env.version }}.crx
           path: "./release/"
 
       - name: Download Firefox signed xpi
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.1
         with:
-          name: 7speaking-bot-rework_firefox-${{ inputs.version }}.xpi
+          name: 7speaking-bot-rework_firefox-${{ env.version }}.xpi
           path: "./release/"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b #v3.0.1
         with:
-          tag_name: ${{ inputs.version }}
-          name: ${{ inputs.version }}
+          tag_name: ${{ env.version }}
+          name: ${{ env.version }}
           generate_release_notes: true
           files: |
-            ./release/7speaking-bot-rework_chrome-${{ inputs.version }}.zip
-            ./release/7speaking-bot-rework_chrome-${{ inputs.version }}.crx
-            ./release/7speaking-bot-rework_firefox-${{ inputs.version }}.xpi
+            ./release/7speaking-bot-rework_chrome-${{ env.version }}.zip
+            ./release/7speaking-bot-rework_chrome-${{ env.version }}.crx
+            ./release/7speaking-bot-rework_firefox-${{ env.version }}.xpi
 
