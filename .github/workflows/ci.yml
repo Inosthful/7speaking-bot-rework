@@ -8,10 +8,12 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7.0.0
     - uses: actions/setup-node@v4
-    - name: Install dependencies
-      run: npm install -g yarn && yarn
+    - uses: borales/actions-yarn@3766bb1335b98fb13c60eaf358fe20811b730a88 #v5
+      with:
+        cmd: install
+
     - name: Run lint
       run: npm run lint
 
@@ -23,10 +25,13 @@ jobs:
       website_test_username: ${{ secrets.WEBSITE_TEST_USERNAME }}
       website_test_password: ${{ secrets.WEBSITE_TEST_PASSWORD }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7.0.0
     - uses: actions/setup-node@v4
-    - name: Install dependencies
-      run: npm install -g yarn && yarn
+    - uses: borales/actions-yarn@3766bb1335b98fb13c60eaf358fe20811b730a88 #v5
+      with:
+        cmd:
+          install
+
     - name: Install Playwright Browser
       run: yarn playwright install chromium
     - name: Run tests
@@ -39,9 +44,14 @@ jobs:
       - lint
       - test
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@v7.0.0
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+      - uses: borales/actions-yarn@3766bb1335b98fb13c60eaf358fe20811b730a88 #v5
+        with:
+          cmd: install
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
         env:
@@ -56,17 +66,23 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
       - uses: actions/setup-node@v4
-      - name: Install dependencies
-        run: npm install -g yarn && yarn
+      - uses: borales/actions-yarn@3766bb1335b98fb13c60eaf358fe20811b730a88 #v5
+        with:
+          cmd: install
+
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 #0.36.0
         with:
           scan-type: 'repository'
           scanners: 'vuln,secret,misconfig'
           scan-ref: '.'
-          format: 'table'
+          format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
-          exit-code: '1'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: 'trivy-results.sarif'
