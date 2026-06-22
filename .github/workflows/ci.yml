@@ -45,6 +45,8 @@ jobs:
       - test
     steps:
       - uses: actions/checkout@v7.0.0
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
       - uses: borales/actions-yarn@3766bb1335b98fb13c60eaf358fe20811b730a88 #v5
         with:
@@ -76,7 +78,7 @@ jobs:
           scan-type: 'repository'
           scanners: 'vuln,secret,misconfig'
           scan-ref: '.'
-          format: 'table'
+          format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'

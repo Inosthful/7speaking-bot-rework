@@ -36,21 +36,20 @@ jobs:
           yarn crx3
           --keyPath key.pem
           --zipPath "./release/7speaking-bot-rework_chrome-$version.zip"
-          --crxPath "./release/7speaking-bot-rework_chrome-$version.crx"
+          --crxPath "./release/7speaking-bot-rework_chromium-$version.crx"
           --xmlPath "./release/chrome_update.xml"
           --crxURL "https://github.com/orkeilius/7speaking-bot-rework/releases/download/$version/7speaking-bot-rework_chromium-$version.crx"
           "./build/chrome-mv3-prod/manifest.json"
-
       - name: Upload Chrome Extension ${{ env.version }} zip
         uses: actions/upload-artifact@v7.0.1
         with:
           path: "./release/7speaking-bot-rework_chrome-${{ env.version }}.zip"
           name: 7speaking-bot-rework_chrome-${{ env.version }}.zip
-      - name: Upload Chrome Extension crx
+      - name: Upload Chromium Extension crx
         uses: actions/upload-artifact@v7.0.1
         with:
-          path: "./release/7speaking-bot-rework_chrome-${{ env.version }}.crx"
-          name: 7speaking-bot-rework_chrome-${{ env.version }}.crx
+          path: "./release/7speaking-bot-rework_chromium-${{ env.version }}.crx"
+          name: 7speaking-bot-rework_chromium-${{ env.version }}.crx
       - name: Upload Chrome metadata
         uses: actions/upload-artifact@v7.0.1
         with:
@@ -175,10 +174,10 @@ jobs:
           name: 7speaking-bot-rework_chrome-${{ env.version }}.zip
           path: "./release/"
 
-      - name: Download Chrome crx
+      - name: Download Chromium crx
         uses: actions/download-artifact@v8.0.1
         with:
-          name: 7speaking-bot-rework_chrome-${{ env.version }}.crx
+          name: 7speaking-bot-rework_chromium-${{ env.version }}.crx
           path: "./release/"
 
       - name: Download Firefox signed xpi
@@ -195,6 +194,6 @@ jobs:
           generate_release_notes: true
           files: |
             ./release/7speaking-bot-rework_chrome-${{ env.version }}.zip
-            ./release/7speaking-bot-rework_chrome-${{ env.version }}.crx
+            ./release/7speaking-bot-rework_chromium-${{ env.version }}.crx
             ./release/7speaking-bot-rework_firefox-${{ env.version }}.xpi
 
